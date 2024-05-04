@@ -19,43 +19,47 @@ action_to_gate = {
 class QuantCircuitEnv(gym.Env):
     def __init__(self, max_length, dataset):
         self.num_qubits = dataset.get_num_features()
-        self.state = []
+        self.state = [0] * max_length
+        self.state_length = 0
         self.possible_rotation_gates = ['rx', 'ry', 'rx']
         self.possible_entaglement_gates = ['cx', 'cz']
-        self.action_space = spaces.Discrete(5)
+        self.action_space = spaces.Discrete(7)
         self.max_length = max_length
-        self.done = False
+        self.done = 0
         self.dataset = dataset
 
     def get_observation_info(self):
         obs = self.state
-        self.done = len(self.state) == self.max_length
+        if self.state_length == self.max_length:
+            self.done = 1
         reward = self._compute_reward()
         info = {
-            'architecture_length': len(self.state),
+            'state_length': self.state_length,
             'max_length': self.max_length,
             'state_chain': self.state,
         }
         return obs, reward, self.done, info
 
     def step(self, action):
-        if self.done:
+        if self.done == 1:
             return
 
-        self.state.append(action)
+        self.state[self.state_length] = action
+        self.state_length += 1
         observation, reward, self.done, info = self.get_observation_info()
 
         return observation, reward, self.done, info
 
     def _compute_reward(self):
         self.build_final_classifier()
-        gates = [action_to_gate.get(action + 1) for action in self.state]
+        gates = [action_to_gate.get(action) for action in self.state if action in action_to_gate.keys()]
         trainer = ChildNetTrainer(self.dataset, self.qnn, gates)
         return trainer.train_child_net()
 
     def reset(self):
-        self.state = []
-        self.done = False
+        self.state = [0] * self.max_length
+        self.state_length = 0
+        self.done = 0
         return self.state
 
     def render(self):
@@ -63,9 +67,13 @@ class QuantCircuitEnv(gym.Env):
         print(self.qnn.circuit)
 
     def state_to_ansatz(self):
-        gates = [action_to_gate.get(action + 1) for action in self.state]
+        gates = []
+        for action in self.state:
+            if action != 0:
+                gates.append(action_to_gate.get(action))
         feature_map = ZZFeatureMap(feature_dimension=self.num_qubits, reps=1)
-        ansatz = TwoLocal(self.num_qubits, self._filter_rotation_gates(gates), self._filter_entanglement_gates(gates), 'circular',
+        ansatz = TwoLocal(self.num_qubits, self._filter_rotation_gates(gates), self._filter_entanglement_gates(gates),
+                          'circular',
                           insert_barriers=True,
                           skip_final_rotation_layer=True)
         return feature_map, ansatz

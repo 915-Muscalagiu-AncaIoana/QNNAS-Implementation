@@ -3,14 +3,14 @@ import torch
 from torch import optim, Tensor
 from torch.optim import Adam
 import torch.nn.functional as F
-from controller_network import QNetwork
+from controller_network import QNetwork, QuantumQNetwork
 from replay_memory import ReplayMemory
 
 
 class DQNAgent:
-    def __init__(self, env, state_dim, action_dim, hidden_dim=64, learning_rate=1e-4, batch_size=64,
+    def __init__(self, env, state_dim, action_dim, hidden_dim=64, learning_rate=1e-4, batch_size=1,
                  discount_rate=0.99):
-        self.model = QNetwork(state_dim, action_dim, hidden_dim)
+        self.model = QuantumQNetwork(state_dim, action_dim, hidden_dim)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.replay_memory = ReplayMemory(10000)
         self.batch_size = batch_size
@@ -28,7 +28,7 @@ class DQNAgent:
             print(f'Epsilon: {epsilon}: Exploitation')
             with torch.no_grad():
                 Q_values = self.model(Tensor(state)).numpy()
-            return np.argmax(Q_values[0])
+            return np.argmax(Q_values)
 
     def play_one_step(self, env, state, epsilon):
         action = self.epsilon_greedy_policy(state, epsilon)
@@ -37,12 +37,13 @@ class DQNAgent:
         return next_state, reward, done, info
 
     def sequential_training_step(self):
-        experiences = self.replay_memory.sample(self.batch_size)
-        states, actions, rewards, next_states, dones = experiences
-        current_Q_values = self.model(states).gather(1, actions.unsqueeze(-1)).squeeze(-1)
+        experiences = self.replay_memory.sample(min(self.batch_size, len(self.replay_memory.memory)))
+        states, actions, rewards, next_states, dones = zip(*experiences)
+
+        current_Q_values = self.model(Tensor(states)).gather(min(self.batch_size, len(self.replay_memory.memory)), torch.tensor(actions, dtype=torch.int64).unsqueeze(-1)).squeeze(-1)
         with torch.no_grad():
-            next_Q_values = self.model(next_states).max(1)[0]
-            expected_Q_values = rewards + (1 - dones) * self.discount_rate * next_Q_values
+            next_Q_values = self.model(Tensor(next_states)).max(1)[0]
+            expected_Q_values = torch.tensor(rewards, dtype=torch.float32) + (1 - torch.tensor(dones, dtype=torch.float32)) * self.discount_rate * torch.tensor(next_Q_values, dtype=torch.float32)
 
         loss = F.mse_loss(current_Q_values, expected_Q_values)
 
@@ -53,8 +54,8 @@ class DQNAgent:
     def learn(self):
         rewards = []
         best_score = 0
-        for episode in range(100):
-            epsilon = max(1 - episode / 5, 0.01)
+        for episode in range(10):
+            epsilon = max(1 - episode / 10, 0.01)
             obs = self.env.reset()
             episode_reward = 0
             for step in range(5):
@@ -68,8 +69,8 @@ class DQNAgent:
                 torch.save(self.model.state_dict(), './new_model_best_weights.pth')
                 best_score = episode_reward
 
-            print("\rEpisode: {}, Reward : {}, eps: {:.3f}".format(episode, episode_reward, epsilon), end="")
-            if episode > 2:
+            print("\rEpisode: {}, Reward : {}, eps: {:.3f}\n".format(episode, episode_reward, epsilon), end="")
+            if episode >= 0:
                 self.sequential_training_step()
         print(rewards)
         print(best_score)
