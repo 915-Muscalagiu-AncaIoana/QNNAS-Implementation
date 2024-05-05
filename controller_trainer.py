@@ -5,6 +5,7 @@ from torch.optim import Adam
 import torch.nn.functional as F
 from controller_network import QNetwork, QuantumQNetwork
 from replay_memory import ReplayMemory
+from utils import plot_rewards
 
 
 class DQNAgent:
@@ -69,8 +70,8 @@ class DQNAgent:
                 torch.save(self.model.state_dict(), './new_model_best_weights.pth')
                 best_score = episode_reward
 
-            print("\rEpisode: {}, Reward : {}, eps: {:.3f}\n".format(episode, episode_reward, epsilon), end="")
+            print("\rEpisode: {}, Reward : {}, eps: {:.3f}".format(episode, episode_reward, epsilon))
             if episode >= 0:
                 self.sequential_training_step()
-        print(rewards)
-        print(best_score)
+        plot_rewards(rewards)
+        print(f'Best reward: {best_score}')
