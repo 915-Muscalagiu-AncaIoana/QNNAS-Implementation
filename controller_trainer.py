@@ -8,7 +8,7 @@ from replay_memory import ReplayMemory
 
 
 class DQNAgent:
-    def __init__(self, env, state_dim, action_dim, hidden_dim=64, learning_rate=1e-4, batch_size=1,
+    def __init__(self, env, state_dim, action_dim, hidden_dim=16, learning_rate=1e-4, batch_size=1,
                  discount_rate=0.99):
         self.model = QuantumQNetwork(state_dim, action_dim, hidden_dim)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
