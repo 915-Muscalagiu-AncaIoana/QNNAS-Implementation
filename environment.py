@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import gym
 from gym.vector.utils import spaces
@@ -17,12 +18,14 @@ action_to_gate = {
 
 
 class QuantCircuitEnv(gym.Env):
-    def __init__(self, max_length, dataset):
+    def __init__(self, max_length, dataset, gates=None):
+        if gates is None:
+            gates = ['rx', 'ry', 'rz', 'cx', 'cy']
         self.num_qubits = dataset.get_num_features()
         self.state = [0] * max_length
         self.state_length = 0
-        self.possible_rotation_gates = ['rx', 'ry', 'rx']
-        self.possible_entaglement_gates = ['cx', 'cz']
+        self.possible_rotation_gates = self._filter_rotation_gates(gates)
+        self.possible_entanglement_gates = self._filter_entanglement_gates(gates)
         self.action_space = spaces.Discrete(7)
         self.max_length = max_length
         self.done = 0
@@ -80,9 +83,23 @@ class QuantCircuitEnv(gym.Env):
 
     def build_circuit(self):
         qc = qk.QuantumCircuit(self.num_qubits)
+
         feature_map, ansatz = self.state_to_ansatz()
+        feature_map = feature_map.decompose()
+        ansatz = ansatz.decompose()
+
         qc.compose(feature_map, inplace=True)
         qc.compose(ansatz, inplace=True)
+
+        # 🔍 Print and save only the ansatz
+        print(ansatz.draw(output="text"))
+        os.makedirs("circuits", exist_ok=True)
+        filename = f"circuits/ansatz_len{self.state_length}_step{''.join(map(str, self.state[:self.state_length]))}.png"
+        fig = ansatz.draw(output="mpl")
+        fig.savefig(filename)
+        plt.close(fig.figure)
+        print(f"[INFO] Ansatz diagram saved to: {filename}")
+
         return qc, feature_map.parameters, ansatz.parameters
 
     def build_final_classifier(self):
