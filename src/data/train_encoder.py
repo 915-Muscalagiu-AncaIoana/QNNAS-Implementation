@@ -23,5 +23,5 @@ for epoch in range(500):
     if epoch % 10 == 0:
         print(f"Epoch {epoch}: Loss {loss.item():.4f}")
 
-torch.save(model.state_dict(), "digits_encoder.pt")
+torch.save(model.state_dict(), "../../encoders/digits_encoder.pt")
 print("✅ Encoder saved.")

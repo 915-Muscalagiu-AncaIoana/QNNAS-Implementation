@@ -1,5 +1,6 @@
 import torch.nn as nn
-from qiskit.circuit import QuantumCircuit, ParameterVector
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
 from qiskit_machine_learning.neural_networks import EstimatorQNN
 from qiskit_machine_learning.connectors import TorchConnector
 

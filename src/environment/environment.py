@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import gym
 from gym.vector.utils import spaces
@@ -8,7 +10,7 @@ from gym import utils
 import qiskit as qk
 from qiskit_machine_learning.neural_networks import EstimatorQNN
 
-from child_net_trainer import ChildNetTrainer
+from training.child_net_trainer import ChildNetTrainer
 
 objective_func_vals = []
 plt.rcParams["figure.figsize"] = (12, 6)
@@ -18,7 +20,7 @@ action_to_gate = {
 
 
 class QuantCircuitEnv(gym.Env):
-    def __init__(self, max_length, dataset, gates=None):
+    def __init__(self, max_length, dataset, gates=None, run_id = None):
         if gates is None:
             gates = ['rx', 'ry', 'rz', 'cx', 'cy']
         self.num_qubits = dataset.get_num_features()
@@ -30,6 +32,7 @@ class QuantCircuitEnv(gym.Env):
         self.max_length = max_length
         self.done = 0
         self.dataset = dataset
+        self.run_id = run_id
 
     def get_observation_info(self):
         obs = self.state
@@ -91,10 +94,15 @@ class QuantCircuitEnv(gym.Env):
         qc.compose(feature_map, inplace=True)
         qc.compose(ansatz, inplace=True)
 
-        # 🔍 Print and save only the ansatz
+        #  Print and save only the ansatz
         print(ansatz.draw(output="text"))
-        os.makedirs("circuits", exist_ok=True)
-        filename = f"circuits/ansatz_len{self.state_length}_step{''.join(map(str, self.state[:self.state_length]))}.png"
+
+        # Save relative to where script is executed (not inside site-packages)
+        output_dir = Path.cwd() / "circuits"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = output_dir / f"ansatz_{self.run_id}_len{self.state_length}_step{''.join(map(str, self.state[:self.state_length]))}.png"
+
         fig = ansatz.draw(output="mpl")
         fig.savefig(filename)
         plt.close(fig.figure)

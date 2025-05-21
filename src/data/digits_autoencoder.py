@@ -1,5 +1,5 @@
 import torch.nn as nn
-from base_autoencoder import BaseAutoencoder
+from data.base_autoencoder import BaseAutoencoder
 
 class DigitsAutoencoder(BaseAutoencoder):
     def _build_encoder(self, input_dim, hidden_dim):
