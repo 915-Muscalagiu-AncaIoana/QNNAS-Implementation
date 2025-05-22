@@ -30,6 +30,9 @@ def load_best_architectures():
 
     return gallery_items
 
+def toggle_autoencoder_visibility(dataset_choice):
+    return gr.update(visible=(dataset_choice == "Digits"))
+
 with gr.Blocks() as app:
 
     with gr.Tab("Setup"):
@@ -39,6 +42,18 @@ with gr.Blocks() as app:
             label="Select Dataset",
             choices=["Iris", "Digits"],
             value="Iris"
+        )
+
+        autoencoder_path = gr.Textbox(
+            label="Autoencoder Weights Path",
+            placeholder="e.g., models/autoencoder_digits.pt",
+            visible=False
+        )
+
+        dataset_dropdown.change(
+            fn=toggle_autoencoder_visibility,
+            inputs=dataset_dropdown,
+            outputs=autoencoder_path
         )
 
         gates_checklist = gr.CheckboxGroup(
@@ -63,7 +78,7 @@ with gr.Blocks() as app:
         timer = gr.Timer(5)
         timer.tick(fn=load_best_architectures, outputs=gallery)
 
-    def start_training(dataset, gates, gamma, lr, max_length):
+    def start_training(dataset, gates, gamma, lr, max_length, ae_path):
         train_script_path = os.path.join(os.path.dirname(__file__), "..", "training", "train.py")
         train_script_path = os.path.abspath(train_script_path)
         venv_python = ".venv/bin/python"
@@ -77,6 +92,10 @@ with gr.Blocks() as app:
             "--lr", str(lr),
             "--max_length", str(max_length)
         ]
+
+        if dataset == "Digits" and ae_path:
+            command += ["--autoencoder_path", ae_path]
+
         print(command)
         try:
             subprocess.Popen(command)
@@ -86,10 +105,10 @@ with gr.Blocks() as app:
 
     start_button.click(
         fn=start_training,
-        inputs=[dataset_dropdown, gates_checklist, discount_rate, learning_rate, max_length],
+        inputs=[dataset_dropdown, gates_checklist, discount_rate, learning_rate, max_length, autoencoder_path],
         outputs=status_output
     )
 
 if __name__ == "__main__":
     print("Training started!", flush=True)
-    app.launch(debug = True)
+    app.launch(debug=True)
