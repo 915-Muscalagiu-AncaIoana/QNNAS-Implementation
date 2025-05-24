@@ -58,20 +58,27 @@ class DQNAgent:
         for episode in range(10):
             epsilon = max(1 - episode / 10, 0.01)
             obs = self.env.reset()
-            episode_reward = 0
+            max_step_reward = float('-inf')
             for step in range(5):
                 obs, reward, done, info = self.play_one_step(self.env, obs, epsilon)
-                episode_reward += reward
+
+                penalty = 0.01 * (step + 1)  # Assuming each step = 1 extra layer
+                adjusted_reward = reward - penalty
+
+                if adjusted_reward > max_step_reward:
+                    max_step_reward = adjusted_reward
+
                 if done:
                     break
-            rewards.append(episode_reward)
 
-            if episode_reward >= best_score:
+            rewards.append(max_step_reward)
+            if max_step_reward >= best_score:
                 torch.save(self.model.state_dict(), '../../models/new_model_best_weights.pth')
-                best_score = episode_reward
+                best_score = max_step_reward
 
-            print("\rEpisode: {}, Reward : {}, eps: {:.3f}".format(episode, episode_reward, epsilon))
-            if episode >= 0:
-                self.sequential_training_step()
+            print(f"\rEpisode: {episode}, Max Reward: {max_step_reward:.4f}, Epsilon: {epsilon:.3f}")
+            self.sequential_training_step()
+
         plot_rewards(rewards)
-        print(f'Best reward: {best_score}')
+        print(f'Best reward: {best_score:.4f}')
+

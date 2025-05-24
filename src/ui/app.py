@@ -25,13 +25,19 @@ def load_best_architectures():
 
         circuit_img = Image.open(circuit_path).resize(target_size)
         loss_img = Image.open(loss_path).resize(target_size)
-        gallery_items.append((circuit_img, f"✅ Accuracy: {accuracy}"))
-        gallery_items.append(loss_img)
+        gallery_items.append((circuit_img, f"Epoch {epoch_id} – Accuracy: {accuracy}"))
+        gallery_items.append((loss_img, f"Epoch {epoch_id} – Loss Curve"))
 
     return gallery_items
 
 def toggle_autoencoder_visibility(dataset_choice):
-    return gr.update(visible=(dataset_choice == "Digits"))
+    visible = dataset_choice == "Digits"
+    return gr.update(visible=visible), gr.update(interactive=not visible)
+
+def validate_inputs(dataset, ae_path):
+    if dataset == "Digits" and not ae_path.strip():
+        return gr.update(interactive=False)
+    return gr.update(interactive=True)
 
 with gr.Blocks() as app:
 
@@ -48,12 +54,6 @@ with gr.Blocks() as app:
             label="Autoencoder Weights Path",
             placeholder="e.g., models/autoencoder_digits.pt",
             visible=False
-        )
-
-        dataset_dropdown.change(
-            fn=toggle_autoencoder_visibility,
-            inputs=dataset_dropdown,
-            outputs=autoencoder_path
         )
 
         gates_checklist = gr.CheckboxGroup(
@@ -78,12 +78,26 @@ with gr.Blocks() as app:
         timer = gr.Timer(5)
         timer.tick(fn=load_best_architectures, outputs=gallery)
 
+    dataset_dropdown.change(
+        fn=toggle_autoencoder_visibility,
+        inputs=dataset_dropdown,
+        outputs=[autoencoder_path, start_button]
+    )
+
+    autoencoder_path.input(
+        fn=lambda ae_path: validate_inputs("Digits", ae_path),
+        inputs=autoencoder_path,
+        outputs=start_button
+    )
+
     def start_training(dataset, gates, gamma, lr, max_length, ae_path):
+        if dataset == "Digits" and not ae_path.strip():
+            return "❌ Please provide a valid path to the autoencoder weights for the Digits dataset."
+
         train_script_path = os.path.join(os.path.dirname(__file__), "..", "training", "train.py")
         train_script_path = os.path.abspath(train_script_path)
         venv_python = ".venv/bin/python"
         logging.info("Training started")
-        print(train_script_path)
         command = [
             venv_python, train_script_path,
             "--dataset", dataset,
@@ -93,7 +107,7 @@ with gr.Blocks() as app:
             "--max_length", str(max_length)
         ]
 
-        if dataset == "Digits" and ae_path:
+        if dataset == "Digits":
             command += ["--autoencoder_path", ae_path]
 
         print(command)
@@ -110,5 +124,4 @@ with gr.Blocks() as app:
     )
 
 if __name__ == "__main__":
-    print("Training started!", flush=True)
     app.launch(debug=True)
