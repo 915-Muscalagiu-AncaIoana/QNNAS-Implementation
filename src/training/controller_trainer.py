@@ -6,6 +6,14 @@ import torch.nn.functional as F
 from controller_network import QuantumQNetwork
 from replay_memory import ReplayMemory
 from utils import plot_rewards
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+MODEL_DIR = os.path.join(PROJECT_ROOT, "models")
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+model_path = os.path.join(MODEL_DIR, "new_model_best_weights.pth")
 
 
 class DQNAgent:
@@ -73,7 +81,7 @@ class DQNAgent:
 
             rewards.append(max_step_reward)
             if max_step_reward >= best_score:
-                torch.save(self.model.state_dict(), '../../models/new_model_best_weights.pth')
+                torch.save(self.model.state_dict(), model_path)
                 best_score = max_step_reward
 
             print(f"\rEpisode: {episode}, Max Reward: {max_step_reward:.4f}, Epsilon: {epsilon:.3f}")

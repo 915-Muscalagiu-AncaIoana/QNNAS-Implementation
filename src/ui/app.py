@@ -1,12 +1,13 @@
 import logging
 import os
-import subprocess
+import requests
 from glob import glob
 
 import gradio as gr
 from PIL import Image
 
 logging.basicConfig(level=logging.INFO)
+
 
 def load_best_architectures():
     circuit_paths = sorted(glob("best_architectures/circuit_epoch*.png"))
@@ -30,17 +31,19 @@ def load_best_architectures():
 
     return gallery_items
 
+
 def toggle_autoencoder_visibility(dataset_choice):
     visible = dataset_choice == "Digits"
     return gr.update(visible=visible), gr.update(interactive=not visible)
+
 
 def validate_inputs(dataset, ae_path):
     if dataset == "Digits" and not ae_path.strip():
         return gr.update(interactive=False)
     return gr.update(interactive=True)
 
-with gr.Blocks() as app:
 
+with gr.Blocks() as app:
     with gr.Tab("Setup"):
         gr.Markdown("## Quantum Reinforcement Agent Setup")
 
@@ -90,32 +93,29 @@ with gr.Blocks() as app:
         outputs=start_button
     )
 
+
     def start_training(dataset, gates, gamma, lr, max_length, ae_path):
         if dataset == "Digits" and not ae_path.strip():
             return "❌ Please provide a valid path to the autoencoder weights for the Digits dataset."
 
-        train_script_path = os.path.join(os.path.dirname(__file__), "..", "training", "train.py")
-        train_script_path = os.path.abspath(train_script_path)
-        venv_python = ".venv/bin/python"
-        logging.info("Training started")
-        command = [
-            venv_python, train_script_path,
-            "--dataset", dataset,
-            "--gates", *gates,
-            "--discount", str(gamma),
-            "--lr", str(lr),
-            "--max_length", str(max_length)
-        ]
+        payload = {
+            "dataset": dataset,
+            "gates": gates,
+            "discount": gamma,
+            "lr": lr,
+            "max_length": max_length,
+            "autoencoder_path": ae_path if dataset == "Digits" else None
+        }
 
-        if dataset == "Digits":
-            command += ["--autoencoder_path", ae_path]
-
-        print(command)
         try:
-            subprocess.Popen(command)
-            return f"🚀 Training started on {dataset} with γ={gamma}, lr={lr}, gates={gates}, max_length={max_length}"
+            response = requests.post("http://localhost:8000/start-training", json=payload)
+            if response.status_code == 200 or response.status_code == 201:
+                return f"✅ Job queued: {response.json()}"
+            else:
+                return f"❌ Server responded with {response.status_code}: {response.text}"
         except Exception as e:
-            return f"❌ Failed to start training: {e}"
+            return f"❌ Failed to send training request: {e}"
+
 
     start_button.click(
         fn=start_training,
