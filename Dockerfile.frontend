@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY pyproject.toml ./
+
+RUN pip install --no-cache-dir uv \
+    && uv venv .venv
+
+COPY . .
+
+RUN uv pip install .
+
+EXPOSE 7860
+
+CMD [".venv/bin/python", "-u", "-m", "ui.app"]

@@ -1,0 +1,17 @@
+# .dockerignore
+__pycache__/
+*.pyc
+*.pkl
+*.pt
+*.h5
+*.log
+*.csv
+*.ipynb
+datasets/
+models/
+circuits/
+build/
+.venv/
+env/
+.git/
+.gradio/

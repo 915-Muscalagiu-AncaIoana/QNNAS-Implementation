@@ -9,16 +9,23 @@ from PIL import Image
 logging.basicConfig(level=logging.INFO)
 
 
-def load_best_architectures():
-    circuit_paths = sorted(glob("best_architectures/circuit_epoch*.png"))
-    loss_paths = sorted(glob("best_architectures/loss_epoch*.png"))
+def load_best_architectures(session_id=None):
+    base_path = "best_architectures"
+    if session_id:
+        base_path = os.path.join(base_path, str(session_id))
+    print(session_id)
+    circuit_paths = sorted(glob(os.path.join(base_path, "circuit_epoch*.png")))
+    loss_paths = sorted(glob(os.path.join(base_path, "loss_epoch*.png")))
 
     gallery_items = []
     target_size = (450, 300)
-
+    print(circuit_paths)
+    print(loss_paths)
     for circuit_path, loss_path in zip(circuit_paths, loss_paths):
+        print(circuit_path)
+        print(loss_path)
         epoch_id = circuit_path.split("epoch")[-1].split(".")[0]
-        metrics_path = f"best_architectures/metrics_epoch{epoch_id}.txt"
+        metrics_path = os.path.join(base_path, f"metrics_epoch{epoch_id}.txt")
         accuracy = "N/A"
         if os.path.exists(metrics_path):
             with open(metrics_path) as f:
@@ -32,6 +39,19 @@ def load_best_architectures():
     return gallery_items
 
 
+def load_sessions():
+    try:
+        response = requests.get("http://localhost:8000/sessions")
+        print(response)
+        if response.ok:
+            sessions = response.json()
+            return [f"{s['id']} – {s['dataset']} – {s['status']}" for s in sessions]
+        return []
+    except Exception as e:
+        logging.warning(f"Failed to load sessions: {e}")
+        return []
+
+
 def toggle_autoencoder_visibility(dataset_choice):
     visible = dataset_choice == "Digits"
     return gr.update(visible=visible), gr.update(interactive=not visible)
@@ -41,6 +61,10 @@ def validate_inputs(dataset, ae_path):
     if dataset == "Digits" and not ae_path.strip():
         return gr.update(interactive=False)
     return gr.update(interactive=True)
+
+
+def extract_session_id(session_label):
+    return session_label.split(" – ")[0] if session_label else None
 
 
 with gr.Blocks() as app:
@@ -62,7 +86,7 @@ with gr.Blocks() as app:
         gates_checklist = gr.CheckboxGroup(
             label="Select Allowed Gates",
             choices=["rx", "ry", "rz", "cx", "cz"],
-            value=["rx", "cz"]
+            value=["rx", "ry", "rz", "cx", "cz"]
         )
 
         with gr.Row():
@@ -79,7 +103,42 @@ with gr.Blocks() as app:
         gr.Markdown("## 📊 Best Architectures Per Epoch")
         gallery = gr.Gallery(label="Best Architectures per Epoch", columns=2, height="70vh", object_fit="contain")
         timer = gr.Timer(5)
-        timer.tick(fn=load_best_architectures, outputs=gallery)
+
+        current_session_id = gr.State(value=None)
+
+        def update_gallery_with_state(session_id):
+            return load_best_architectures(session_id)
+
+        timer.tick(
+            fn=update_gallery_with_state,
+            inputs=current_session_id,
+            outputs=gallery
+        )
+
+    with gr.Tab("All Training Sessions"):
+        all_sessions = gr.Dropdown(label="Available Sessions", choices=load_sessions(), value=None)
+        session_gallery = gr.Gallery(label="Session Results", columns=2, height="70vh", object_fit="contain")
+        selected_session_id = gr.State(value=None)
+        refresh_timer = gr.Timer(2)  # Update every 2 seconds
+
+        def on_session_change(session):
+            session_id = extract_session_id(session)
+            return session_id, load_best_architectures(session_id)
+
+        all_sessions.change(
+            fn=on_session_change,
+            inputs=all_sessions,
+            outputs=[selected_session_id, session_gallery]
+        )
+
+        def update_sessions_dropdown():
+            return gr.update(choices=load_sessions())
+
+        refresh_timer.tick(
+            fn=update_sessions_dropdown,
+            inputs=[],
+            outputs=all_sessions
+        )
 
     dataset_dropdown.change(
         fn=toggle_autoencoder_visibility,
@@ -92,7 +151,6 @@ with gr.Blocks() as app:
         inputs=autoencoder_path,
         outputs=start_button
     )
-
 
     def start_training(dataset, gates, gamma, lr, max_length, ae_path):
         if dataset == "Digits" and not ae_path.strip():
@@ -109,18 +167,19 @@ with gr.Blocks() as app:
 
         try:
             response = requests.post("http://localhost:8000/start-training", json=payload)
-            if response.status_code == 200 or response.status_code == 201:
-                return f"✅ Job queued: {response.json()}"
+            if response.status_code in [200, 201]:
+                session_id = response.json().get("training_id")
+                return f"✅ Job queued: {session_id}", session_id
             else:
-                return f"❌ Server responded with {response.status_code}: {response.text}"
+                return f"❌ Server responded with {response.status_code}: {response.text}", None
         except Exception as e:
-            return f"❌ Failed to send training request: {e}"
+            return f"❌ Failed to send training request: {e}", None
 
 
     start_button.click(
         fn=start_training,
         inputs=[dataset_dropdown, gates_checklist, discount_rate, learning_rate, max_length, autoencoder_path],
-        outputs=status_output
+        outputs=[status_output, current_session_id]
     )
 
 if __name__ == "__main__":

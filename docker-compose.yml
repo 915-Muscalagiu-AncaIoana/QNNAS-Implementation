@@ -1,0 +1,49 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: qnnas-backend
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgresql:postgresql@postgres:5432/qnnas
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m litestar --app-dir src --app api.backend:app run --reload"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: qnnas-frontend
+    depends_on:
+      - backend
+    ports:
+      - "7860:7860"
+    volumes:
+      - .:/app
+    environment:
+      - BACKEND_URL=http://backend:8000
+    command: >
+      python src/ui/app.py
+
+  postgres:
+    image: postgres:15
+    container_name: qnnas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgresql
+      POSTGRES_PASSWORD: postgresql
+      POSTGRES_DB: qnnas
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+volumes:
+  pgdata:

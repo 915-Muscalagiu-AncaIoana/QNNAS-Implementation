@@ -11,18 +11,47 @@ UV := uv
 
 .PHONY: install
 install:
-	@echo "📦 Installing project in $(VENV)"
+	@echo "📦 Creating virtual environment in $(VENV)"
 	$(UV) venv $(VENV)
-	$(UV) pip install .
+	@echo "📦 Installing project with uv pip..."
+	$(UV) pip install . --python $(PY)
+
+# ========================
+# DATABASE SETUP
+# ========================
+
+.PHONY: start-postgres
+start-postgres:
+	docker-compose -f docker-compose-postgres.yml up -d
+
+.PHONY: stop-postgres
+stop-postgres:
+	docker-compose -f docker-compose-postgres.yml down
+
+.PHONY: remove-postgres
+remove-postgres:
+	docker-compose -f docker-compose-postgres.yml down -v
+
+.PHONY: migrate
+db-migrate:
+	alembic revision --autogenerate -m "$(m)"
+
+.PHONY: upgrade
+db-upgrade:
+	alembic upgrade head
 
 # ========================
 # APP LAUNCH
 # ========================
 
-.PHONY: ui
-ui:
+.PHONY: start-backend
+start-backend:
+	$(PY) -m litestar --app-dir src --app api.backend:app run --reload
+
+.PHONY: start-ui
+start-ui:
 	@echo "🚀 Launching Gradio UI..."
-	@PY=$(PY) $(PY) -u -m ui.app
+	PYTHONPATH=src $(PY) -u -m ui.app
 
 .PHONY: train
 train:
