@@ -41,7 +41,7 @@ def load_best_architectures(session_id=None):
 
 def load_sessions():
     try:
-        response = requests.get("http://localhost:8000/sessions")
+        response = requests.get("http://localhost:8000/sessions/")
         print(response)
         if response.ok:
             sessions = response.json()
@@ -101,18 +101,58 @@ with gr.Blocks() as app:
 
     with gr.Tab("Live Results"):
         gr.Markdown("## 📊 Best Architectures Per Epoch")
-        gallery = gr.Gallery(label="Best Architectures per Epoch", columns=2, height="70vh", object_fit="contain")
-        timer = gr.Timer(5)
+
+        gallery = gr.Gallery(
+            label="Best Architectures per Epoch",
+            columns=2,
+            height="70vh",
+            object_fit="contain"
+        )
 
         current_session_id = gr.State(value=None)
 
-        def update_gallery_with_state(session_id):
-            return load_best_architectures(session_id)
+        # ✅ Styled & grouped status display
+        with gr.Group(elem_id="status-group"):
+            status_display = gr.HTML(
+                "<div style='text-align:center; font-size: 28px; padding: 20px;'>No job currently started</div>"
+            )
 
+
+        def update_gallery_and_status(session_id):
+            if not session_id:
+                return [], gr.update(
+                    value="<div style='text-align:center; font-size: 28px;'>No job currently started</div>")
+
+            try:
+                resp = requests.get(f"http://localhost:8000/sessions/{session_id}")
+                if resp.ok:
+                    session = resp.json()
+                    status = session.get("status", "unknown").lower()
+
+                    status_map = {
+                        "pending": "⏳ <b>Pending...</b>",
+                        "running": "🚀 <b>Running...</b>",
+                        "completed": "✅ <b>Completed</b>",
+                        "failed": "❌ <b>Failed</b>"
+                    }
+                    message = status_map.get(status, f"🔍 <b>Status:</b> {status}")
+
+                    return load_best_architectures(session_id), gr.update(
+                        value=f"<div style='text-align:center; font-size: 28px; padding: 20px;'>{message}</div>"
+                    )
+                else:
+                    return [], gr.update(
+                        value="<div style='text-align:center; font-size: 28px;'>⚠️ Error fetching session</div>")
+            except Exception as e:
+                return [], gr.update(value=f"<div style='text-align:center; font-size: 28px;'>⚠️ Exception: {e}</div>")
+
+
+        # Timer that triggers the update
+        timer = gr.Timer(5)
         timer.tick(
-            fn=update_gallery_with_state,
+            fn=update_gallery_and_status,
             inputs=current_session_id,
-            outputs=gallery
+            outputs=[gallery, status_display]
         )
 
     with gr.Tab("All Training Sessions"):
@@ -166,7 +206,7 @@ with gr.Blocks() as app:
         }
 
         try:
-            response = requests.post("http://localhost:8000/start-training", json=payload)
+            response = requests.post("http://localhost:8000/sessions/", json=payload)
             if response.status_code in [200, 201]:
                 session_id = response.json().get("training_id")
                 return f"✅ Job queued: {session_id}", session_id

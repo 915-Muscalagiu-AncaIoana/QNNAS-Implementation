@@ -3,6 +3,8 @@ import subprocess
 from litestar import post, get, Router
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from litestar.params import Parameter
+from litestar.status_codes import HTTP_404_NOT_FOUND
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -19,7 +21,7 @@ class TrainRequest(BaseModel):
     max_length: int
     autoencoder_path: str | None = None
 
-@post("/start-training")
+@post("")
 async def start_training(data: TrainRequest, db: Session = Provide(get_db_session)) -> dict:
     repo = TrainingSessionRepository(db)
 
@@ -55,7 +57,7 @@ async def start_training(data: TrainRequest, db: Session = Provide(get_db_sessio
     return {"status": "started", "training_id": session.id}
 
 
-@get("/sessions")
+@get("")
 async def list_sessions(db: Session = Provide(get_db_session)) -> list[TrainingSessionDTO]:
     repo = TrainingSessionRepository(db)
     try:
@@ -66,4 +68,21 @@ async def list_sessions(db: Session = Provide(get_db_session)) -> list[TrainingS
         print("Error:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-start_training_router = Router(path="/", route_handlers=[start_training])
+@get("{session_id:int}")
+async def get_session(session_id: int = Parameter(), db: Session = Provide(get_db_session)) -> TrainingSessionDTO:
+    repo = TrainingSessionRepository(db)
+    session = repo.get_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"Session {session_id} not found")
+    return TrainingSessionDTO.model_validate(session)
+
+
+sessions_router = Router(
+    path="/sessions/",
+    route_handlers=[
+        start_training,
+        list_sessions,
+        get_session
+    ]
+)
+

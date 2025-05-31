@@ -38,6 +38,9 @@ class TrainingSessionRepository:
     def get_all(self):
         return self.db.query(TrainingSession).all()
 
+    def get_by_id(self, session_id: int):
+        return self.db.query(TrainingSession).filter(TrainingSession.id == session_id).first()
+
     def update_status(self, session_id: int, new_status: TrainingStatus) -> TrainingSession:
         session = self.db.query(TrainingSession).filter_by(id=session_id).first()
         if not session:

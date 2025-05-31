@@ -1,11 +1,13 @@
 from litestar import Litestar
 from litestar.di import Provide
 
-from api.routes import start_training_router, list_sessions
+from api.routes import sessions_router
 from domain.db import get_db_session
 
 app = Litestar(
-    route_handlers=[start_training_router, list_sessions],
+    route_handlers=[
+        sessions_router
+    ],
     dependencies={
         "db": Provide(get_db_session)
     }

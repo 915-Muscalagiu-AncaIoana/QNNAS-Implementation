@@ -102,7 +102,7 @@ class DQNAgent:
             rewards.append(max_step_reward)
 
             if best_state is not None:
-                filename = f"ansatz_len{self.env.state_length}_step{''.join(map(str, best_state))}.png"
+                filename = f"ansatz_ep{episode}_len{len(best_state)}.png"
                 source = Path.cwd() / "circuits" / str(self.env.run_id) / filename
                 dest_dir = Path.cwd() / "best_architectures" / str(self.env.run_id)
                 dest_dir.mkdir(parents=True, exist_ok=True)

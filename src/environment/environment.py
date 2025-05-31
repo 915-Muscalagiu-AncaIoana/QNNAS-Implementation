@@ -103,7 +103,7 @@ class QuantCircuitEnv(gym.Env):
         output_dir = Path.cwd() / "circuits" / str(self.run_id)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        filename = output_dir / f"ansatz_len{self.state_length}_step{''.join(map(str, self.state[:self.state_length]))}.png"
+        filename = output_dir / f"ansatz_ep{self.epoch}_len{self.state_length}.png"
 
         fig = ansatz.draw(output="mpl")
         fig.savefig(filename)
