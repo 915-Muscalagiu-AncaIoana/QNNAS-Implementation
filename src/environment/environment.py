@@ -20,7 +20,7 @@ action_to_gate = {
 
 
 class QuantCircuitEnv(gym.Env):
-    def __init__(self, max_length, dataset, gates=None, run_id = None):
+    def __init__(self, max_length, dataset, gates=None, run_id=None):
         if gates is None:
             gates = ['rx', 'ry', 'rz', 'cx', 'cy']
         self.num_qubits = dataset.get_num_features()
@@ -33,6 +33,7 @@ class QuantCircuitEnv(gym.Env):
         self.done = 0
         self.dataset = dataset
         self.run_id = run_id
+        self.epoch = 0
 
     def get_observation_info(self):
         obs = self.state
@@ -59,13 +60,14 @@ class QuantCircuitEnv(gym.Env):
     def _compute_reward(self):
         self.build_final_classifier()
         gates = [action_to_gate.get(action) for action in self.state if action in action_to_gate.keys()]
-        trainer = ChildNetTrainer(self.dataset, self.qnn, gates)
+        trainer = ChildNetTrainer(self.dataset, self.qnn, gates, self.run_id, self.epoch)
         return trainer.train_child_net()
 
-    def reset(self):
+    def reset(self, epoch):
         self.state = [0] * self.max_length
         self.state_length = 0
         self.done = 0
+        self.epoch = epoch
         return self.state
 
     def render(self):
@@ -98,10 +100,10 @@ class QuantCircuitEnv(gym.Env):
         print(ansatz.draw(output="text"))
 
         # Save relative to where script is executed (not inside site-packages)
-        output_dir = Path.cwd() / "circuits"
+        output_dir = Path.cwd() / "circuits" / str(self.run_id)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        filename = output_dir / f"ansatz_{self.run_id}_len{self.state_length}_step{''.join(map(str, self.state[:self.state_length]))}.png"
+        filename = output_dir / f"ansatz_len{self.state_length}_step{''.join(map(str, self.state[:self.state_length]))}.png"
 
         fig = ansatz.draw(output="mpl")
         fig.savefig(filename)

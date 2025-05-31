@@ -1,4 +1,6 @@
 import datetime
+from contextlib import contextmanager
+
 from sqlalchemy.orm import Session
 
 from domain.db import get_db_session
@@ -45,10 +47,10 @@ class TrainingSessionRepository:
         self.db.refresh(session)
         return session
 
-def get_training_session_repository() -> TrainingSessionRepository:
-    db = next(get_db_session())  # use generator manually
+@contextmanager
+def get_training_session_repository():
+    db = next(get_db_session())
     try:
-        return TrainingSessionRepository(db)
-    except Exception:
+        yield TrainingSessionRepository(db)
+    finally:
         db.close()
-        raise
