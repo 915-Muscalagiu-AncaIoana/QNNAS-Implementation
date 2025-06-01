@@ -1,6 +1,4 @@
-import os
 from pathlib import Path
-
 import numpy as np
 import gym
 from gym.vector.utils import spaces
@@ -96,10 +94,7 @@ class QuantCircuitEnv(gym.Env):
         qc.compose(feature_map, inplace=True)
         qc.compose(ansatz, inplace=True)
 
-        #  Print and save only the ansatz
         print(ansatz.draw(output="text"))
-
-        # Save relative to where script is executed (not inside site-packages)
         output_dir = Path.cwd() / "circuits" / str(self.run_id)
         output_dir.mkdir(parents=True, exist_ok=True)
 

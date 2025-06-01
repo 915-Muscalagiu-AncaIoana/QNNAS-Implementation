@@ -6,7 +6,7 @@ from datetime import datetime
 class TrainingSessionDTO(BaseModel):
     id: int
     dataset: str
-    gates: Any  # use `dict[str, Any]` if you know the JSON structure
+    gates: Any
     discount_rate: float
     learning_rate: float
     max_architecture_length: int

@@ -13,17 +13,13 @@ def load_best_architectures(session_id=None):
     base_path = "best_architectures"
     if session_id:
         base_path = os.path.join(base_path, str(session_id))
-    print(session_id)
+
     circuit_paths = sorted(glob(os.path.join(base_path, "circuit_epoch*.png")))
     loss_paths = sorted(glob(os.path.join(base_path, "loss_epoch*.png")))
 
     gallery_items = []
     target_size = (450, 300)
-    print(circuit_paths)
-    print(loss_paths)
     for circuit_path, loss_path in zip(circuit_paths, loss_paths):
-        print(circuit_path)
-        print(loss_path)
         epoch_id = circuit_path.split("epoch")[-1].split(".")[0]
         metrics_path = os.path.join(base_path, f"metrics_epoch{epoch_id}.txt")
         accuracy = "N/A"
@@ -111,7 +107,6 @@ with gr.Blocks() as app:
 
         current_session_id = gr.State(value=None)
 
-        # ✅ Styled & grouped status display
         with gr.Group(elem_id="status-group"):
             status_display = gr.HTML(
                 "<div style='text-align:center; font-size: 28px; padding: 20px;'>No job currently started</div>"
@@ -146,8 +141,6 @@ with gr.Blocks() as app:
             except Exception as e:
                 return [], gr.update(value=f"<div style='text-align:center; font-size: 28px;'>⚠️ Exception: {e}</div>")
 
-
-        # Timer that triggers the update
         timer = gr.Timer(5)
         timer.tick(
             fn=update_gallery_and_status,
@@ -159,7 +152,7 @@ with gr.Blocks() as app:
         all_sessions = gr.Dropdown(label="Available Sessions", choices=load_sessions(), value=None)
         session_gallery = gr.Gallery(label="Session Results", columns=2, height="70vh", object_fit="contain")
         selected_session_id = gr.State(value=None)
-        refresh_timer = gr.Timer(2)  # Update every 2 seconds
+        refresh_timer = gr.Timer(2)
 
         def on_session_change(session):
             session_id = extract_session_id(session)

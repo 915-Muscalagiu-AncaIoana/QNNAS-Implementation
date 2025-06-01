@@ -60,7 +60,6 @@ class ChildNetTrainer:
         print(f"[INFO] Epoch {epoch + 1}, Train Loss: {loss_train.item():.6f}")
 
         print("[INFO] Training complete. Evaluating model...")
-        # Plot and save losses
         loss_dir = Path.cwd() / "losses" / str(self.session)
         loss_dir.mkdir(parents=True, exist_ok=True)
         loss_plot_path = loss_dir / f"loss_epoch{self.epoch}.png"
@@ -73,10 +72,8 @@ class ChildNetTrainer:
         plt.grid(True)
         plt.savefig(loss_plot_path)
         plt.close()
-
         print(f"[INFO] Loss plot saved to: {loss_plot_path}")
 
-        # Evaluate
         print("[INFO] Training complete. Evaluating model...")
         self.qnn.eval()
         X_test_torch = torch.tensor(X_test[:, :num_qubits], dtype=torch.float32)

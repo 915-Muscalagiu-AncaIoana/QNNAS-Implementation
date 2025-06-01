@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from litestar import post, get, Router
@@ -11,7 +12,6 @@ from sqlalchemy.orm import Session
 from api.dtos.training_session_dto import TrainingSessionDTO
 from domain.db import get_db_session
 from repositories.training_session_repo import TrainingSessionRepository
-
 
 class TrainRequest(BaseModel):
     dataset: str
@@ -46,7 +46,11 @@ async def start_training(data: TrainRequest, db: Session = Provide(get_db_sessio
     if data.autoencoder_path:
         cmd += ["--autoencoder_path", data.autoencoder_path]
 
-    with open("training_output.log", "w") as log_file:
+
+    os.makedirs("logs", exist_ok=True)
+    log_path = f"logs/session_{session.id}.log"
+
+    with open(log_path, "w") as log_file:
         subprocess.Popen(
             cmd,
             cwd="/Users/ancaioanamuscalagiu/Documents/QNNAS-Implementation",
@@ -62,10 +66,8 @@ async def list_sessions(db: Session = Provide(get_db_session)) -> list[TrainingS
     repo = TrainingSessionRepository(db)
     try:
         sessions = repo.get_all()
-        print(sessions)  # For debugging
         return [TrainingSessionDTO.model_validate(s) for s in sessions]
     except Exception as e:
-        print("Error:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @get("{session_id:int}")

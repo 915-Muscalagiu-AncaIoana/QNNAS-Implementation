@@ -53,12 +53,6 @@ This will:
 * Create and activate the virtual environment with `uv`
 * Install all Python dependencies from `pyproject.toml`
 
-Ensure correct Python version:
-
-```bash
-uv run python --version
-# Output: Python 3.11.x
-```
 
 And then activate the virtual environment created:
 ```bash
@@ -164,9 +158,8 @@ curl -X POST http://localhost:8000/sessions/ \
 ### ✅  From Command Line
 
 ```bash
-make train DATASET=Iris GATES="rx ry" DISCOUNT=0.9 LR=0.001 MAX_LENGTH=4 ENCODER_PATH=""
+make train DATASET=Iris GATES=rx DISCOUNT=0.9 LR=0.001 MAX_LENGTH=4 ENCODER_PATH=""
 ```
-
 ### ✅ From Gradio Interface
 
 Start the UI:
@@ -268,7 +261,6 @@ Below is a full list of utility commands available via the `Makefile` for managi
 | `make db-migrate`      | Creates a new Alembic migration revision (pass `m="message"`)       |
 | `make db-upgrade`      | Applies all Alembic migrations to the database                      |
 | `make clean`           | Cleans up `__pycache__`, `.mypy_cache`, and other temporary files   |
-| `make format`          | Autoformats the code using `black`                                  |
 | `make lint`            | Runs `ruff` to check for code style and linting issues              |
 | `make freeze`          | Saves current environment packages to `requirements.txt`            |
 

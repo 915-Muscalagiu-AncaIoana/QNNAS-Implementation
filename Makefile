@@ -56,8 +56,7 @@ start-ui:
 .PHONY: train
 train:
 	@echo "🧠 Starting CLI training..."
-	$(PY) -m training.train \
-		--session_id=$(SESSION_ID) \
+	PYTHONPATH=src $(PY) src/training/train.py \
 		--dataset=$(DATASET) \
 		--gates=$(GATES) \
 		--discount=$(DISCOUNT) \
@@ -68,11 +67,6 @@ train:
 # ========================
 # DEV TOOLS
 # ========================
-
-.PHONY: format
-format:
-	@echo "🎨 Formatting code with black..."
-	$(VENV)/bin/black .
 
 .PHONY: lint
 lint:
