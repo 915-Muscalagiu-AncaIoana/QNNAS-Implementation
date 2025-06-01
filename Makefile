@@ -56,7 +56,14 @@ start-ui:
 .PHONY: train
 train:
 	@echo "🧠 Starting CLI training..."
-	$(PY) -m training.train
+	$(PY) -m training.train \
+		--session_id=$(SESSION_ID) \
+		--dataset=$(DATASET) \
+		--gates=$(GATES) \
+		--discount=$(DISCOUNT) \
+		--lr=$(LR) \
+		--max_length=$(MAX_LENGTH) \
+		--encoder_path=$(ENCODER_PATH)
 
 # ========================
 # DEV TOOLS
@@ -71,11 +78,6 @@ format:
 lint:
 	@echo "🧹 Linting code with ruff..."
 	$(VENV)/bin/ruff check .
-
-.PHONY: test
-test:
-	@echo "🧪 Running tests with pytest..."
-	$(VENV)/bin/pytest tests/
 
 # ========================
 # CLEANUP

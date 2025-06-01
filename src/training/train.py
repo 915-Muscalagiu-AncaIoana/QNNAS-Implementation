@@ -1,16 +1,31 @@
 import argparse
 import traceback
 
-from sklearn.datasets import load_iris, load_digits
-
 from controller_trainer import DQNAgent
-from data.dataset import Dataset
+from data.dataset import Dataset, load_dataset_by_name
 from domain.domain import TrainingStatus
 from environment import QuantCircuitEnv
 from repositories.training_session_repo import get_training_session_repository
 
 
 def train_from_args(session_id, dataset_name, gates, discount, learning_rate, max_length, encoder_path=None):
+    data_raw = load_dataset_by_name(dataset_name)
+    dataset = Dataset(data_raw, encoder_path=encoder_path)
+
+    # Create session if not provided
+    if session_id is None:
+        with get_training_session_repository() as repo:
+            session = repo.create(
+                dataset=dataset_name,
+                gates=gates,
+                discount_rate=discount,
+                learning_rate=learning_rate,
+                max_architecture_length=max_length,
+                autoencoder_path=encoder_path,
+            )
+            session_id = session.id
+            print(f"[INFO] Created new session with ID: {session_id}")
+
     print(f" Starting training for session {session_id}...")
     print(f" Dataset: {dataset_name}")
     print(f" Gates: {gates}")
@@ -24,12 +39,6 @@ def train_from_args(session_id, dataset_name, gates, discount, learning_rate, ma
         with get_training_session_repository() as repo:
             repo.update_status(session_id, TrainingStatus.running)
 
-        if dataset_name == 'Iris':
-            data = load_iris()
-        else:
-            data = load_digits()
-
-        dataset = Dataset(data, encoder_path=encoder_path)
         env = QuantCircuitEnv(max_length, dataset, gates, session_id)
         agent = DQNAgent(
             env=env,
@@ -54,7 +63,7 @@ def train_from_args(session_id, dataset_name, gates, discount, learning_rate, ma
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Quantum RL Agent")
-    parser.add_argument("--session_id", type=int, required=True, help="Session ID from the database")
+    parser.add_argument("--session_id", type=int, required=False, help="Session ID from the database (optional)")
     parser.add_argument("--dataset", type=str, required=True, choices=["Iris", "Digits"], help="Dataset to use")
     parser.add_argument("--gates", nargs="+", required=True, help="Gates to allow (e.g., rx ry cz)")
     parser.add_argument("--discount", type=float, required=True, help="Discount factor γ")

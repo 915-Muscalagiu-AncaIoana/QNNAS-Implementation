@@ -4,8 +4,22 @@ import os
 import torch
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.datasets import load_iris, load_digits
+from typing import Callable
 
 MAX_QUBITS_AVAILABLE = 16
+
+DATASET_LOADERS: dict[str, Callable[[], dict]] = {
+    "Iris": load_iris,
+    "Digits": load_digits,
+}
+
+def load_dataset_by_name(name: str):
+    try:
+        return DATASET_LOADERS[name]()
+    except KeyError:
+        raise ValueError(f"[ERROR] Unknown dataset '{name}'. Available options: {list(DATASET_LOADERS.keys())}")
+
 
 class Dataset:
     def __init__(self, dataset, encoder_path=None, hidden_dim=MAX_QUBITS_AVAILABLE):
