@@ -6,6 +6,8 @@ from glob import glob
 import gradio as gr
 from PIL import Image
 
+from config.settings import settings
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -37,7 +39,7 @@ def load_best_architectures(session_id=None):
 
 def load_sessions():
     try:
-        response = requests.get("http://localhost:8000/sessions/")
+        response = requests.get(f"{settings.api_base_url}/sessions/")
         print(response)
         if response.ok:
             sessions = response.json()
@@ -119,7 +121,7 @@ with gr.Blocks() as app:
                     value="<div style='text-align:center; font-size: 28px;'>No job currently started</div>")
 
             try:
-                resp = requests.get(f"http://localhost:8000/sessions/{session_id}")
+                resp = requests.get(f"{settings.api_base_url}/sessions/{session_id}")
                 if resp.ok:
                     session = resp.json()
                     status = session.get("status", "unknown").lower()
@@ -199,7 +201,7 @@ with gr.Blocks() as app:
         }
 
         try:
-            response = requests.post("http://localhost:8000/sessions/", json=payload)
+            response = requests.post(f"{settings.api_base_url}/sessions/", json=payload)
             if response.status_code in [200, 201]:
                 session_id = response.json().get("training_id")
                 return f"✅ Job queued: {session_id}", session_id

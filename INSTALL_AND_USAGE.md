@@ -59,6 +59,24 @@ And then activate the virtual environment created:
 source .venv/bin/activate
 ```
 
+### 3. Configure Environment Variables
+
+Copy the example environment file and customize the settings as needed:
+
+```bash
+cp .env.example .env
+```
+
+Then open the `.env` file and update the following settings according to your environment:
+
+`DATABASE_URL`: PostgreSQL connection string
+
+`MAX_QUBITS_AVAILABLE`: Maximum number of qubits available in your quantum simulator
+
+`PROJECT_ROOT` : Absolute path to the root of your QNNAS project (used for subprocesses, file resolution, etc.)
+
+`API_BASE_URL`: Base URL of the backend API (used by the UI or client-side apps)
+
 ---
 
 ## 📁 Project Structure

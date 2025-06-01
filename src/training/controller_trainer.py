@@ -118,7 +118,6 @@ class DQNAgent:
                 else:
                     print(f"File not found: {source}")
 
-                # Copy loss plot if it exists
                 source_loss_plot = Path.cwd() / "losses" / str(self.env.run_id) / f"loss_epoch{episode}.png"
                 if source_loss_plot.exists():
                     shutil.copy2(source_loss_plot, dest_loss_plot)
@@ -126,12 +125,10 @@ class DQNAgent:
                 else:
                     print(f"Loss plot not found: {source_loss_plot}")
 
-                # Save metrics file
                 with open(dest_metrics, "w") as f:
                     f.write(f"{best_accuracy:.4f}\n")
                 print(f"Metrics written to: {dest_metrics}")
 
-            # Save best model overall
             if max_step_reward >= best_score:
                 print(f"New overall best score! ({max_step_reward:.4f} >= {best_score:.4f})")
                 best_score = max_step_reward

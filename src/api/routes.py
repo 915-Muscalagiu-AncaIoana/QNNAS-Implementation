@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from api.dtos.training_session_dto import TrainingSessionDTO
 from domain.db import get_db_session
 from repositories.training_session_repo import TrainingSessionRepository
+from config.settings import settings
+
 
 class TrainRequest(BaseModel):
     dataset: str
@@ -53,7 +55,7 @@ async def start_training(data: TrainRequest, db: Session = Provide(get_db_sessio
     with open(log_path, "w") as log_file:
         subprocess.Popen(
             cmd,
-            cwd="/Users/ancaioanamuscalagiu/Documents/QNNAS-Implementation",
+            cwd=settings.project_root,
             stdout=log_file,
             stderr=log_file
         )
