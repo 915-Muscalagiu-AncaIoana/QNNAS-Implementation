@@ -118,7 +118,7 @@ class DQNAgent:
                 else:
                     print(f"File not found: {source}")
 
-                source_loss_plot = Path.cwd() / "losses" / str(self.env.run_id) / f"loss_epoch{episode}.png"
+                source_loss_plot = Path.cwd() / "losses" / str(self.env.run_id) / f"loss_epoch{episode}_step{len(best_state)}.png"
                 if source_loss_plot.exists():
                     shutil.copy2(source_loss_plot, dest_loss_plot)
                     print(f"Loss plot copied to: {dest_loss_plot}")

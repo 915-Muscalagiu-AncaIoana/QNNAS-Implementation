@@ -7,12 +7,13 @@ from pathlib import Path
 
 
 class ChildNetTrainer:
-    def __init__(self, dataset, qnn, state, session, epoch):
+    def __init__(self, dataset, qnn, state, session, epoch, step):
         self.dataset = dataset
         self.qnn = TorchConnector(qnn)
         self.state = state
         self.session = session
         self.epoch = epoch
+        self.step = step
         print(f"[INFO] Initialized ChildNetTrainer")
         print(f"[INFO] Architecture state: {self.state}")
 
@@ -62,7 +63,7 @@ class ChildNetTrainer:
         print("[INFO] Training complete. Evaluating model...")
         loss_dir = Path.cwd() / "losses" / str(self.session)
         loss_dir.mkdir(parents=True, exist_ok=True)
-        loss_plot_path = loss_dir / f"loss_epoch{self.epoch}.png"
+        loss_plot_path = loss_dir / f"loss_epoch{self.epoch}_step{self.step}.png"
 
         plt.figure()
         plt.plot(range(1, len(losses) + 1), losses, marker='o')

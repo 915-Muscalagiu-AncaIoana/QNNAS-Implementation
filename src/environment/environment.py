@@ -58,7 +58,7 @@ class QuantCircuitEnv(gym.Env):
     def _compute_reward(self):
         self.build_final_classifier()
         gates = [action_to_gate.get(action) for action in self.state if action in action_to_gate.keys()]
-        trainer = ChildNetTrainer(self.dataset, self.qnn, gates, self.run_id, self.epoch)
+        trainer = ChildNetTrainer(self.dataset, self.qnn, gates, self.run_id, self.epoch, self.state_length)
         return trainer.train_child_net()
 
     def reset(self, epoch):
