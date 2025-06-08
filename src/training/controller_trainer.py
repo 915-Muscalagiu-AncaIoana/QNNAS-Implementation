@@ -6,9 +6,9 @@ import torch
 from torch import optim, Tensor
 from torch.optim import Adam
 import torch.nn.functional as F
-from controller_network import QuantumQNetwork
-from replay_memory import ReplayMemory
-from utils import plot_rewards
+from training.controller_network import QuantumQNetwork
+from training.replay_memory import ReplayMemory
+from utils.utils import plot_rewards
 import os
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))

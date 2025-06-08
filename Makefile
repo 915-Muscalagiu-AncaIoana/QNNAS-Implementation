@@ -73,6 +73,13 @@ lint:
 	@echo "🧹 Linting code with ruff..."
 	$(VENV)/bin/ruff check .
 
+.PHONY: test
+test:
+	@echo "🧪 Running tests with coverage..."
+	PYTHONPATH=src $(VENV)/bin/coverage run --rcfile=.coveragerc -m pytest tests/ --disable-warnings
+	$(VENV)/bin/coverage report -m --rcfile=.coveragerc
+
+
 # ========================
 # CLEANUP
 # ========================
